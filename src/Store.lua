@@ -4,13 +4,18 @@ local Signal = require(script.Parent.Signal)
 local NoYield = require(script.Parent.NoYield)
 
 local Store = {}
-
+local stores = {} -- used by devtools to listen to devtools stuff
+Store._stores = stores
 -- This value is exposed as a private value so that the test code can stay in
 -- sync with what event we listen to for dispatching the Changed event.
 -- It may not be Heartbeat in the future.
 Store._flushEvent = RunService.Heartbeat
 
 Store.__index = Store
+
+function Store._getStores()
+	return Store._stores
+end
 
 --[[
 	Create a new Store whose state is transformed by the given reducer function.
@@ -39,6 +44,7 @@ function Store.new(reducer, initialState, middlewares)
 	self._connections = {}
 
 	self.changed = Signal.new()
+	self._devtoolsDispatch = Signal.new()
 
 	setmetatable(self, Store)
 
@@ -88,6 +94,8 @@ function Store:dispatch(action)
 
 		self._state = self._reducer(self._state, action)
 		self._mutatedSinceFlush = true
+		
+		self._devtoolsDispatch:fire(action)
 	else
 		error(("actions of type %q are not permitted"):format(typeof(action)), 2)
 	end
