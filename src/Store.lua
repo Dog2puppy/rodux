@@ -95,10 +95,15 @@ function Store:dispatch(action)
 		self._state = self._reducer(self._state, action)
 		self._mutatedSinceFlush = true
 		
-		self._devtoolsDispatch:fire(action)
+		self._devtoolsDispatch:fire(action, self._state)
 	else
 		error(("actions of type %q are not permitted"):format(typeof(action)), 2)
 	end
+end
+
+function Store:_devtoolsRevertState(state)
+	self._state = state
+	self._devtoolsDispatch:fire({ type = "@REVERT" }, state)
 end
 
 --[[
